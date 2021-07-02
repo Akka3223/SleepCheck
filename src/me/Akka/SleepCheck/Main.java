@@ -1,6 +1,7 @@
 package me.Akka.SleepCheck;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,21 +28,26 @@ public class Main extends JavaPlugin {
 		tellConsole("Plugin ON");
         if (!configFile.exists()) {
 			config.addDefault("Percentage", "50");
-			config.addDefault("Skip-Message", "#444444Succesfully skipped the night!");
+			config.addDefault("Skip-Message", "#ffffffMSuccesfully skipped the night!");
 			config.addDefault("SleepingLower", "#ffffffMore players needed to skip the night!");
 			config.options().copyDefaults(true);
 			saveConfig();
         }
-    	
+
         Bukkit.getScheduler().runTaskTimer(this, () -> {
-    		int PercentINT = Integer.parseInt(this.getConfig().getString("Percentage"));
+			int PercentINT;
+			if(Main.plugin.getConfig().getString("Percentage") != null) {
+				PercentINT = Integer.parseInt(Main.plugin.getConfig().getString("Percentage"));
+			} else {
+				PercentINT = 50;
+			}
     		int percentage = (PercentINT * PlayerCount()) / 100;
     		for(Player player : Bukkit.getServer().getOnlinePlayers()) {
     			if(player.isSleeping())
     				player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText((int)Math.floor(percentage) + " " + ChatColor.translateAlternateColorCodes('&', translate(this.getConfig().getString("SleepingLower")))));    		}
     	}, 20L, 20L);
 		plugin = this;
-        
+
 		Bukkit.getServer().getPluginManager().registerEvents(new Listeners(), this);
 	}
     private static final Pattern HEX_PATTERN = Pattern.compile("#([A-Fa-f0-9]){6}");
@@ -72,8 +78,9 @@ public class Main extends JavaPlugin {
     	int Players = 0;
     	Essentials ess = (Essentials) Bukkit.getPluginManager().getPlugin("Essentials");
 		for(Player player : Bukkit.getServer().getOnlinePlayers()) {
-			if(player instanceof Player)
+			if(player != null)
 			{
+				assert ess != null;
 				if(ess.getUser(player) != null && ess.getUser(player).isAfk()) continue;
 				if(ess.getUser(player) != null && ess.getUser(player).isVanished()) continue;
 				if(player.isSleeping()) continue;
@@ -88,10 +95,10 @@ public class Main extends JavaPlugin {
 	public int SleepingPlayerCount() {
 		int SleepingCount = 0;
 		for(Player player : Bukkit.getServer().getOnlinePlayers()) {
-			if(player instanceof Player)
+			if(player != null)
 			{
 				if(player.isSleeping())
-					++SleepingCount;	
+					++SleepingCount;
 			}
 		}
 		return SleepingCount;
@@ -102,12 +109,12 @@ public class Main extends JavaPlugin {
 	public void tellConsole(String message){
 	    Bukkit.getConsoleSender().sendMessage(message);
 	}
-	
+
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(label.equalsIgnoreCase("bed")) {
 			if (args.length == 0) {
 				sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&4This plugin was made with love by Akka <3 for SLIMI\n/bed reload - reload config."));
-				return true;	
+				return true;
 			}
 			else if(args[0].equalsIgnoreCase("reload") && sender.isOp()) {
 					sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&4Config was succesfully reloaded"));
@@ -117,12 +124,12 @@ public class Main extends JavaPlugin {
 			else if(args[0].equalsIgnoreCase("debug") && sender.isOp()) {
 		    	int SleepingCount = SleepingPlayerCount();
 		    	int PlayerCount = PlayerCount();//Bukkit.getServer().getOnlinePlayers().size();
-				int PercentINT = Integer.parseInt(Main.plugin.getConfig().getString("Percentage"));
+				int PercentINT = Integer.parseInt(Objects.requireNonNull(Main.plugin.getConfig().getString("Percentage")));
 				int percentage = (PercentINT * PlayerCount) / 100;
-				sender.sendMessage(String.valueOf(PlayerCount));
-				sender.sendMessage(String.valueOf(PercentINT));
-				sender.sendMessage(String.valueOf(percentage));
-				sender.sendMessage(String.valueOf(SleepingCount));
+				sender.sendMessage("Player  Count  : " + PlayerCount);
+				sender.sendMessage("Percent Config : " + PercentINT);
+				sender.sendMessage("Percent Needed : " + percentage);
+				sender.sendMessage("Sleeping Count : " + SleepingCount);
 				return true;
 			}
 		}

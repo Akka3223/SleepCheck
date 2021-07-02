@@ -1,5 +1,6 @@
 package me.Akka.SleepCheck;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,40 +21,41 @@ public class Listeners implements Listener {
     public void OnPlayerBedEnterEvent(PlayerBedEnterEvent event) {
     	if (event.getBedEnterResult() != PlayerBedEnterEvent.BedEnterResult.OK) return;
     	if ( day() ) return;
-    	if( event.getPlayer() instanceof Player) {
-    		int PercentINT = Integer.parseInt(Main.plugin.getConfig().getString("Percentage"));
-    		int percentage = (PercentINT * PlayerCount()) / 100;
-    		if((int)Math.floor(percentage) <= 1)
-    		{
-    			World world = Bukkit.getServer().getWorld("world");
-    	    	world.setTime(0);
-    	    	String Message = Main.plugin.getConfig().getString("Skip-Message");
-    	    	Bukkit.getServer().broadcastMessage((ChatColor.translateAlternateColorCodes('&', translate(Message))));
-    	    	return;
-    		}
-    		if((int)Math.floor(percentage) >= 1)
-    		{
-    			CheckHowMuchSleeping();
-    			return;
-    			
-    		}
-    	}
+		int PercentINT;
+    	if(Main.plugin.getConfig().getString("Percentage") != null) {
+			PercentINT = Integer.parseInt(Main.plugin.getConfig().getString("Percentage"));
+		} else {
+			PercentINT = 50;
+		}
+
+		int percentage = (PercentINT * PlayerCount()) / 100;
+		if((int)Math.floor(percentage) <= 1) {
+			World world = Bukkit.getServer().getWorld("world");
+			assert world != null;
+			world.setTime(0);
+			String Message = Main.plugin.getConfig().getString("Skip-Message");
+			Bukkit.getServer().broadcastMessage((ChatColor.translateAlternateColorCodes('&', translate(Message))));
+			return;
+		}
+		if((int)Math.floor(percentage) > 1) {
+			CheckHowMuchSleeping();
+		}
     }
     @EventHandler
     public void PlayerQuitEvent(PlayerQuitEvent event) {
     	if(!day() ) {
     		CheckHowMuchSleeping();
     	}
-    		
     }
     public void CheckHowMuchSleeping()
     {
 		int PercentINT = Integer.parseInt(Main.plugin.getConfig().getString("Percentage"));
 		//int percentage = (int)(PercentINT * PlayerCount()) / 100;
-		
-	    if(SleepingPlayerCount() >= (int)Math.floor((PercentINT * (int)PlayerCount()) / 100)){
+
+	    if(SleepingPlayerCount() >= (int)Math.floor((PercentINT * PlayerCount()) / 100.0)){
 	    	World world = Bukkit.getServer().getWorld("world");
-	    	world.setTime(0);
+			assert world != null;
+			world.setTime(0);
 	    	String Message = Main.plugin.getConfig().getString("Skip-Message");
 	    	Bukkit.getServer().broadcastMessage((ChatColor.translateAlternateColorCodes('&', translate(Message))));
 	    }
@@ -62,8 +64,9 @@ public class Listeners implements Listener {
     	int Players = 0;
     	Essentials ess = (Essentials) Bukkit.getPluginManager().getPlugin("Essentials");
 		for(Player player : Bukkit.getServer().getOnlinePlayers()) {
-			if(player instanceof Player)
+			if(player != null)
 			{
+				assert ess != null;
 				if(ess.getUser(player) != null && ess.getUser(player).isAfk()) continue;
 				if(ess.getUser(player) != null && ess.getUser(player).isVanished()) continue;
 				if(player.isSleeping()) continue;
@@ -78,20 +81,18 @@ public class Listeners implements Listener {
 	public int SleepingPlayerCount() {
 		int SleepingCount = 0;
 		for(Player player : Bukkit.getServer().getOnlinePlayers()) {
-			if(player instanceof Player)
+			if(player != null)
 			{
 				if(player.isSleeping())
-					++SleepingCount;	
+					++SleepingCount;
 			}
 		}
 		return SleepingCount;
 	}
-	public void tellConsole(String message){
-	    Bukkit.getConsoleSender().sendMessage(message);
-	}
+
     public boolean day() {
         Server server = Bukkit.getServer();
-        long time = server.getWorld("world").getTime();
+        long time = Objects.requireNonNull(server.getWorld("world")).getTime();
 
         return time < 12300 || time > 23850;
     }
